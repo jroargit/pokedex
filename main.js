@@ -1,22 +1,54 @@
-let pokemonContainer = document.querySelector('.pokemon-container');
+const pokemonContainer = document.querySelector('.pokemon-container');
+const spinner = document.querySelector('.spinner-border');
+const previous = document.querySelector('#previous');
+const next = document.querySelector('#next');
 const api = "https://pokeapi.co/api/v2/" ;
+
+let offset = 1;
+let limit = 8; 
+
+previous.addEventListener("click", () => {
+
+    if (offset != 1) {
+        offset -= 9;
+        removeChildNodes(pokemonContainer);
+        fetchPokemons(offset, limit) ;
+    }
+});
+
+next.addEventListener("click", () => {
+    offset += 9;
+    removeChildNodes(pokemonContainer);
+    fetchPokemons(offset, limit) ;
+});
 
 function fetchPokemon (id) {
     fetch(`${api}pokemon/${id}`)
         .then(res => res.json())
         .then(data => {
                 createPokemon(data);
+                spinner.style.display = "none";
         });
 }
 
-function fetchPokemons (number) {
-    for (let index = 1; index <= number; index++) {
+function fetchPokemons (offset, limit) {
+    spinner.style.display = "block";
+    for (let index = offset; index <= offset + limit; index++) {
         fetchPokemon(index)
         
     };
 }
 
 function createPokemon (pokemon) {
+
+    const flipCard = document.createElement('div'); 
+    flipCard.classList.add('flip-card');
+
+    const cardContainer = document.createElement('div');
+    cardContainer.classList.add('card-container');
+
+    flipCard.appendChild(cardContainer);
+
     const card = document.createElement('div');
     card.classList.add('pokemon-block');
 
@@ -29,7 +61,7 @@ function createPokemon (pokemon) {
     spriteContainer.appendChild(sprite);
 
     const number = document.createElement('p');
-    number.textContent = `#00${pokemon.id}`;
+    number.textContent = `#${pokemon.id.toString().padStart(3, 0)}`;
 
     const name = document.createElement('p');
     name.classList.add('pokemon-name');
@@ -39,8 +71,56 @@ function createPokemon (pokemon) {
     card.appendChild(number);
     card.appendChild(name);
 
-    pokemonContainer.appendChild(card);
+    const cardBack = document.createElement('div');
+    cardBack.classList.add('pokemon-block-back');
+    cardBack.textContent = "STATS"
+    cardBack.appendChild(progressBar(pokemon.stats));
+
+    cardContainer.appendChild(card);
+    cardContainer.appendChild(cardBack);
+    pokemonContainer.appendChild(flipCard);
 }
 
-fetchPokemons(15);
+function progressBar (stats) {
+    const statsContainer = document.createElement('div');
+    statsContainer.classList.add('stats-container');
+
+    for (let index = 0; index < 3; index++) {
+        const stat = stats[index];
+
+        const statsPercent = stat.base_state /2 + "%";
+
+        const statContainer = document.createElement('div');
+        statContainer.classList.add('stat-container');
+
+        const stateName = document.createElement('div');
+        stateName.textContent = stat.stat.name;
+
+        const progress = document.createElement('div');
+        progress.classList.add('progress');
+        
+        const progressBar = document.createElement('div');
+        progressBar.classList.add('progress-bar');
+        progressBar.setAttribute("aria-valuenow", stat.base_stat);
+        progressBar.setAttribute("aria-valuemin", 0);
+        progressBar.setAttribute("aria-valuemax", 200);
+        progressBar.style.width = statsPercent;
+        progressBar.textContent = stat.base_stat;
+
+        progress.appendChild(progressBar);
+        statContainer.appendChild(stateName);
+        statContainer.appendChild(progress);
+        statsContainer.appendChild(statContainer);
+
+    }
+    return statsContainer;
+}
+
+function removeChildNodes (parent) {
+    while (parent.firstChild) {
+        parent.removeChild(parent.firstChild);
+    }
+}
+
+fetchPokemons(offset, limit);
 
